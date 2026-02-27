@@ -112,7 +112,7 @@ Pick minimal tool set based on skill type:
 
 Notes:
 - Orchestration skills use Task to spawn subagents for
-  heavy work (see explore, review, implement)
+  heavy work (see research, review, implement)
 - Direct-action skills edit files themselves
 - Team tools only needed for multi-agent swarm coordination
 - Most skills also include Glob and Grep for search

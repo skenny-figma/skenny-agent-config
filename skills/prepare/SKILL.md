@@ -18,7 +18,7 @@ Read plan from a plan file or task and create work structure.
   `~/.claude/plans/<project>/`
 - `[task-id]` — source task containing plan in metadata.design
 - (no args) — auto-discover most recent plan file, fall back to
-  in-progress Explore/Review/Fix/Respond task
+  in-progress Research/Review/Fix/Respond task
 
 ## Plan Directory
 
@@ -45,9 +45,9 @@ Plans live at `~/.claude/plans/<project>/<slug>.md`.
    d. If no plan file → fall back to unscoped:
       `ls -t ~/.claude/plans/*.md 2>/dev/null | head -1`
    e. If still none → `TaskList()`, find first in_progress task
-      with subject starting "Explore:", "Review:", "Fix:", or
+      with subject starting "Research:", "Review:", "Fix:", or
       "Respond:"
-   f. No plan found → exit, suggest `/explore` or `/review` first
+   f. No plan found → exit, suggest `/research` or `/review` first
 
 2. **Parse plan**
    - If from plan file: skip YAML frontmatter (between `---` lines)

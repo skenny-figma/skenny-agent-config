@@ -2,7 +2,7 @@
 
 ## Multi-Phase Implementation Guidelines
 
-When using `/explore` to plan complex features, structure the "Next
+When using `/research` to plan complex features, structure the "Next
 Steps" section with explicit phase markers for multi-phase
 implementations:
 

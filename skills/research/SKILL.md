@@ -1,26 +1,26 @@
 ---
-name: explore
+name: research
 description: >
   Research topics, investigate codebases, and create
   implementation plans.
-  Triggers: 'explore', 'investigate', 'research'.
+  Triggers: 'research', 'investigate', 'explore'.
 allowed-tools: Bash, Read, Write, Task, SendMessage, TaskCreate, TaskUpdate, TaskGet, TaskList, TeamCreate, TeamDelete
 argument-hint: "<topic or question> | <task-id> | --continue | --discard | --team"
 ---
 
-# Explore
+# Research
 
-Orchestrate exploration via native tasks and Task delegation.
+Orchestrate research via native tasks and Task delegation.
 
 ## Arguments
 
-- `<topic>` — new exploration on this topic
-- `<task-id>` — continue existing exploration task
-- `--continue` — resume most recent exploration (checks task list
+- `<topic>` — new research on this topic
+- `<task-id>` — continue existing research task
+- `--continue` — resume most recent research (checks task list
   first, then falls back to most recent plan file, then archive)
 - `--discard [slug]` — delete the most recent (or specified) plan
   file without preparing it
-- `--team` — force team mode for parallel multi-topic exploration
+- `--team` — force team mode for parallel multi-topic research
 
 ## Plan Directory
 
@@ -50,19 +50,19 @@ created: <ISO 8601 timestamp>
 status: draft | prepared
 ---
 
-<full exploration findings in standard structure>
+<full research findings in standard structure>
 ```
 
 ## Workflow
 
-### New Exploration
+### New Research
 
 1. Create task:
    ```
    TaskCreate(
-     subject: "Explore: <topic>",
+     subject: "Research: <topic>",
      description: "## Acceptance Criteria\n- Findings written to ~/.claude/plans/<project>/<slug>.md\n- Structured as Current State, Recommendation, and phased Next Steps\n- Each phase is independently actionable",
-     activeForm: "Exploring <topic>",
+     activeForm: "Researching <topic>",
      metadata: { type: "task", priority: 2 }
    )
    ```
@@ -77,25 +77,25 @@ status: draft | prepared
    If 2+ topics detected OR `--team` flag → **Team Mode** (step 4b)
    Otherwise → **Solo Mode** (step 4a)
 
-4. Spawn exploration agent(s).
+4. Spawn research agent(s).
 
    **a) Solo Mode** — spawn a single Task (subagent_type=Explore,
    model=opus) using the solo prompt template below.
 
    **b) Team Mode** — create a Claude team for coordinated
-   parallel exploration.
+   parallel research.
 
-   1. Create team: `TeamCreate(team_name="explore-<slug>")`
+   1. Create team: `TeamCreate(team_name="research-<slug>")`
       Read team config:
-      `~/.claude/teams/explore-<slug>/config.json`
+      `~/.claude/teams/research-<slug>/config.json`
       → extract your `name` field as `<lead-name>`
-   2. Create per-topic tasks under the main explore task.
+   2. Create per-topic tasks under the main research task.
       Cap at 5 topics; group excess together.
       ```
       TaskCreate(
-        subject: "Explore: <topic-N>",
+        subject: "Research: <topic-N>",
         description: "<topic text>",
-        activeForm: "Exploring <topic-N>",
+        activeForm: "Researching <topic-N>",
         metadata: { type: "task", parent_id: "<main-task-id>" }
       )
       ```
@@ -104,8 +104,8 @@ status: draft | prepared
       ```
       Task(
         subagent_type="general-purpose",
-        team_name="explore-<slug>",
-        name="explorer-<N>",
+        team_name="research-<slug>",
+        name="researcher-<N>",
         model=opus,
         prompt=<team worker prompt>
       )
@@ -132,12 +132,12 @@ status: draft | prepared
 
 6. Report results (see Output Format)
 
-### Continue Exploration
+### Continue Research
 
 1. Resolve source:
    - If `$ARGUMENTS` matches a task ID → `TaskGet(taskId)`
    - If `--continue` → `TaskList()`, find first in_progress
-     "Explore:" task. If none found, find most recent plan file
+     "Research:" task. If none found, find most recent plan file
      in `~/.claude/plans/<project>/` via
      `ls -t ~/.claude/plans/<project>/*.md | head -1`
    - If no active plan found, check archive:
@@ -150,7 +150,7 @@ status: draft | prepared
    - From plan file: `Read` the file content (skip frontmatter)
 3. Spawn Explore agent with previous findings prepended:
    "Previous findings:\n<existing-design>\n\nContinue the
-   exploration focusing on: <new-instructions>"
+   research focusing on: <new-instructions>"
 4. Update both stores:
    a. `Write` updated findings to plan file
    b. `TaskUpdate(taskId, metadata: { design: "<updated>" })`
@@ -204,7 +204,7 @@ Team workers use `subagent_type=general-purpose` (not Explore)
 so they can use SendMessage for coordination.
 
 ```
-You are an exploration worker on a team. Research your assigned
+You are a research worker on a team. Research your assigned
 topic and report back.
 
 ## Your Topic
@@ -220,7 +220,7 @@ topic and report back.
 
 1. Claim your task:
    TaskUpdate(taskId="<task-id>", status="in_progress",
-     owner="explorer-<N>")
+     owner="researcher-<N>")
 
 2. Research thoroughly. Use Read, Grep, Glob, Bash for
    investigation. Return findings as text (do NOT write files).
@@ -266,7 +266,7 @@ Then combine:
 
 ## Output Format
 
-**Exploration Task**: #<id>
+**Research Task**: #<id>
 
 **Key Findings**:
 - Bullet points of critical discoveries
@@ -277,4 +277,4 @@ Then combine:
 before `/prepare`.
 
 **Next**: `/prepare` to create tasks, edit the plan file first,
-or `/explore --discard` if not needed.
+or `/research --discard` if not needed.

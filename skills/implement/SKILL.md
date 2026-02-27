@@ -32,7 +32,7 @@ Bash is for read-only orchestration only (git status, team config reads).
 - Else: `TaskList()` → find first in_progress task (Solo Mode)
 - Else: `TaskList()` → find first pending task with empty
   blockedBy (Solo Mode)
-- Nothing found → exit, suggest `/explore` then `/prepare`
+- Nothing found → exit, suggest `/research` then `/prepare`
 
 ## Step 2: Classify
 
@@ -260,7 +260,7 @@ delegate to a Task agent using the Solo Worker Prompt Template.
 ## Error Handling
 
 **No work found:**
-- No task → suggest `/explore` then `/prepare`
+- No task → suggest `/research` then `/prepare`
 - Epic has no children → suggest `/prepare`
 
 **Worker failures:**

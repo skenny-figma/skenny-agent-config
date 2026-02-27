@@ -125,7 +125,7 @@ window time.
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| **explore** | `/explore <topic> \| <task-id> \| --continue \| --team` | Research topics, investigate codebases, create plans in task metadata |
+| **research** | `/research <topic> \| <task-id> \| --continue \| --team` | Research topics, investigate codebases, create plans in task metadata |
 | **prepare** | `/prepare [task-id]` | Convert exploration findings into epic with phased child tasks |
 | **implement** | `/implement [task-id] [--solo]` | Execute plans from tasks; spawns teams for parallel work |
 | **review** | `/review [file-pattern] [--team] \| <task-id> \| --continue` | Senior engineer code review, files findings as tasks |
@@ -177,7 +177,7 @@ filesystem documents. The task tools are the interface:
 ### Typical Cycle
 
 ```
-/explore "topic"     -> research, findings in task metadata
+/research "topic"    -> research, findings in task metadata
 /prepare             -> epic + phased child tasks
 /implement           -> execute via team workers (parallel)
 /review              -> code review, findings as tasks

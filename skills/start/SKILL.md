@@ -33,4 +33,4 @@ Create a new Graphite branch.
 
 5. **Confirm completion**
    - Report branch created
-   - Suggest: `/explore` to plan work or `/implement` to start building
+   - Suggest: `/research` to plan work or `/implement` to start building

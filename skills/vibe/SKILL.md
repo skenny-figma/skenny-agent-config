@@ -2,7 +2,7 @@
 name: vibe
 description: >
   Fully autonomous development workflow from prompt to commit.
-  Chains explore → prepare → implement → commit.
+  Chains research → prepare → implement → commit.
   Triggers: /vibe, "vibe this", "autonomous workflow".
 allowed-tools: Bash, Read, Glob, Skill, TaskCreate, TaskUpdate, TaskGet, TaskList
 argument-hint: "<prompt> [--no-branch] [--continue] [--dry-run]"
@@ -22,12 +22,12 @@ Determine via: `basename $(git rev-parse --show-toplevel 2>/dev/null || pwd)`
 - `<prompt>` — what to build (required unless `--continue`)
 - `--no-branch` — skip branch creation, use current branch
 - `--continue` — resume a failed pipeline from last completed stage
-- `--dry-run` — explore + prepare only, stop before implement
+- `--dry-run` — research + prepare only, stop before implement
 
 ## Pipeline
 
 ```
-/start → /explore → /prepare → /implement → /commit
+/start → /research → /prepare → /implement → /commit
 ```
 
 Each stage verifies success before proceeding. Failures halt
@@ -93,16 +93,16 @@ Skill("start", args="jm/<slug>")
 If on a non-main branch already, skip and report:
 `[1/5] Branch: skipped (already on <branch>)`
 
-### Stage 2: Explore
+### Stage 2: Research
 
 ```
-Skill("explore", args="<prompt>")
+Skill("research", args="<prompt>")
 ```
 
 **Verify**: Plan file exists in `~/.claude/plans/<project>/`.
 Check via `ls -t ~/.claude/plans/<project>/*.md | head -1`.
-**Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "explore" })`
-**Report**: `[2/5] Explored: plan at <path>`
+**Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "research" })`
+**Report**: `[2/5] Researched: plan at <path>`
 
 ### Stage 3: Prepare
 
@@ -156,7 +156,7 @@ Report full summary:
 ```
 Pipeline complete:
 [1/5] Branch: jm/<slug>
-[2/5] Explored: plan at <path>
+[2/5] Researched: plan at <path>
 [3/5] Prepared: epic #<id> with N tasks
 [4/5] Implemented: N/N tasks completed
 [5/5] Committed: <commit oneline>
@@ -177,7 +177,7 @@ If ANY stage fails:
 
    Completed:
    [1/5] Branch: ...
-   [2/5] Explored: ...
+   [2/5] Researched: ...
 
    Resume: `/vibe --continue`
    Or run manually: `/<failed-skill> [args]`
