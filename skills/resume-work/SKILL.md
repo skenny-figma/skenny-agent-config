@@ -90,7 +90,7 @@ Pick the first matching condition:
 1. **CI failing** → "Fix failing checks: [check names]"
 2. **Changes requested** → "`/respond` to triage N comments"
 3. **Unresolved comments** → "`/respond` to triage feedback"
-4. **Pending plan files** → "`/prepare` to create tasks from
+4. **Pending plan files** → "`/implement` to create tasks from
    [filename], or edit in `$EDITOR` first"
 5. **Tasks in progress** → "Continue: [task subject]"
 6. **Active team** → "`/implement` to continue team work"

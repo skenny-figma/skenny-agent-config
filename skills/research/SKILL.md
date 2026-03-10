@@ -28,7 +28,7 @@ Plans are scoped by project to avoid collisions across repos:
 `~/.claude/plans/<project>/` where `<project>` is the `basename`
 of the git root directory (or cwd if not in a repo).
 
-Archived plans (consumed by `/prepare`) live in the `archive/`
+Archived plans (consumed by `/implement`) live in the `archive/`
 subdirectory and can be restored via `--continue`.
 
 Create the directory on first write: `mkdir -p ~/.claude/plans/<project>/`
@@ -260,7 +260,7 @@ Then combine:
 2. Detect cross-topic connections (shared files, dependencies,
    conflicts)
 3. Renumber phases globally across all topics (Phase 1-N
-   sequential) so /prepare can parse them
+   sequential) so /implement can parse them
 4. If cross-topic connections found, add a **Cross-Topic
    Connections** section at the top
 
@@ -274,7 +274,7 @@ Then combine:
 **Recommendation**: <one paragraph>
 
 **Plan**: `~/.claude/plans/<project>/<slug>.md` — review/edit in `$EDITOR`
-before `/prepare`.
+before `/implement`.
 
-**Next**: `/prepare` to create tasks, edit the plan file first,
+**Next**: `/implement` to create tasks, edit the plan file first,
 or `/research --discard` if not needed.

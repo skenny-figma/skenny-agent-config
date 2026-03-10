@@ -2,7 +2,7 @@
 name: vibe
 description: >
   Fully autonomous development workflow from prompt to commit.
-  Chains research → prepare → implement → commit.
+  Chains research → implement → commit.
   Triggers: /vibe, "vibe this", "autonomous workflow".
 allowed-tools: Bash, Read, Glob, Skill, TaskCreate, TaskUpdate, TaskGet, TaskList
 argument-hint: "<prompt> [--no-branch] [--continue] [--dry-run]"
@@ -22,12 +22,12 @@ Determine via: `basename $(git rev-parse --show-toplevel 2>/dev/null || pwd)`
 - `<prompt>` — what to build (required unless `--continue`)
 - `--no-branch` — skip branch creation, use current branch
 - `--continue` — resume a failed pipeline from last completed stage
-- `--dry-run` — research + prepare only, stop before implement
+- `--dry-run` — research only, stop before implement
 
 ## Pipeline
 
 ```
-/start → /research → /prepare → /implement → /commit
+/start → /research → /implement → /commit
 ```
 
 Each stage verifies success before proceeding. Failures halt
@@ -88,10 +88,10 @@ Skill("start", args="jm/<slug>")
 
 **Verify**: `git branch --show-current` returns the new branch.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "branch" })`
-**Report**: `[1/5] Branch: jm/<slug>`
+**Report**: `[1/4] Branch: jm/<slug>`
 
 If on a non-main branch already, skip and report:
-`[1/5] Branch: skipped (already on <branch>)`
+`[1/4] Branch: skipped (already on <branch>)`
 
 ### Stage 2: Research
 
@@ -102,23 +102,12 @@ Skill("research", args="<prompt>")
 **Verify**: Plan file exists in `~/.claude/plans/<project>/`.
 Check via `ls -t ~/.claude/plans/<project>/*.md | head -1`.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "research" })`
-**Report**: `[2/5] Researched: plan at <path>`
+**Report**: `[2/4] Researched: plan at <path>`
 
-### Stage 3: Prepare
-
-```
-Skill("prepare")
-```
-
-**Verify**: `TaskList()` → find task with `metadata.type == "epic"`
-and `status == "in_progress"`.
-**Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "prepare", vibe_epic: "<epicId>" })`
-**Report**: `[3/5] Prepared: epic #<id> with N child tasks`
-
-If `--dry-run` → stop here. Report plan and epic, suggest
+If `--dry-run` → stop here. Report plan file, suggest
 `/implement` or `/vibe --continue` when ready.
 
-### Stage 4: Implement
+### Stage 3: Implement
 
 ```
 Skill("implement")
@@ -127,15 +116,15 @@ Skill("implement")
 **Verify**: `TaskList()` → all children of epic have
 `status == "completed"`.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "implement" })`
-**Report**: `[4/5] Implemented: N/N tasks completed`
+**Report**: `[3/4] Implemented: N/N tasks completed`
 
 If some tasks failed, report failures but continue to commit
 if any code was changed (`git diff --stat` is non-empty).
 
-### Stage 5: Commit
+### Stage 4: Commit
 
 Check `git diff --stat` first. If empty → skip, report
-`[5/5] Commit: skipped (no changes)`.
+`[4/4] Commit: skipped (no changes)`.
 
 ```
 Skill("commit")
@@ -143,7 +132,7 @@ Skill("commit")
 
 **Verify**: `git log -1 --oneline` shows a new commit.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "commit" })`
-**Report**: `[5/5] Committed: <commit oneline>`
+**Report**: `[4/4] Committed: <commit oneline>`
 
 ## Step 5: Finalize
 
@@ -155,11 +144,10 @@ Report full summary:
 
 ```
 Pipeline complete:
-[1/5] Branch: jm/<slug>
-[2/5] Researched: plan at <path>
-[3/5] Prepared: epic #<id> with N tasks
-[4/5] Implemented: N/N tasks completed
-[5/5] Committed: <commit oneline>
+[1/4] Branch: jm/<slug>
+[2/4] Researched: plan at <path>
+[3/4] Implemented: N/N tasks completed
+[4/4] Committed: <commit oneline>
 
 Next: `/submit` to create PR
 ```
@@ -176,8 +164,8 @@ If ANY stage fails:
    Error: <details>
 
    Completed:
-   [1/5] Branch: ...
-   [2/5] Researched: ...
+   [1/4] Branch: ...
+   [2/4] Researched: ...
 
    Resume: `/vibe --continue`
    Or run manually: `/<failed-skill> [args]`
@@ -185,9 +173,9 @@ If ANY stage fails:
 
 ## Stage Count
 
-- With branch: 5 stages (`[N/5]`)
-- With `--no-branch`: 4 stages (`[N/4]`)
-- With `--dry-run`: 3 stages (`[N/3]`) or 2 (`[N/2]` if also
+- With branch: 4 stages (`[N/4]`)
+- With `--no-branch`: 3 stages (`[N/3]`)
+- With `--dry-run`: 2 stages (`[N/2]`) or 1 (`[N/1]` if also
   `--no-branch`)
 
 Adjust the `[N/M]` denominator based on active flags.

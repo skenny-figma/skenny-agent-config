@@ -11,7 +11,7 @@ argument-hint: "[pr-number] | <task-id> | --continue"
 # PR Plan
 
 Fetch PR comments, triage validity, research fixes, produce
-a `/prepare`-compatible plan.
+a phased plan compatible with `/implement`.
 
 ## Arguments
 
@@ -218,10 +218,10 @@ Each phase independently testable. 3-7 phases max.
 **Phases**: <count> implementation phases
 
 **Plan**: `~/.claude/plans/<project>/pr-plan-<N>.md`
-Review/edit in `$EDITOR` before `/prepare`.
+Review/edit in `$EDITOR` before `/implement`.
 
 **Replies**: `TaskGet(<id>)` → check `notes` field for draft
 PR replies to post.
 
-**Next**: `/prepare` to create tasks, or edit the plan first.
+**Next**: `/implement` to create tasks, or edit the plan first.
 ```

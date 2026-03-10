@@ -101,7 +101,7 @@ Plans live at `~/.claude/plans/<project>/respond-pr-<number>.md`.
    - Contains `**Phase N:**` sections → already finalized
 4. **If raw triage** → Finalize:
    - Read user's edits (they may have flipped classifications)
-   - Rewrite agreed items into /prepare-compatible phase format
+   - Rewrite agreed items into phased format compatible with `/implement`
    - Draft PR reply text for disagree/already-done items
    - Update design with phase format
    - Update notes with PR reply drafts
@@ -179,7 +179,8 @@ Return COMPLETE findings as text (do NOT write files). Structure:
 ## Finalization Logic
 
 When continuing a task that has raw triage (agree/disagree
-sections), convert agreed items to /prepare-compatible format:
+sections), convert agreed items to phased format compatible with
+`/implement`:
 
 ```
 **Phase 1: PR Feedback Fixes**
@@ -224,7 +225,7 @@ Store PR reply drafts in notes field:
 - [file:line] reason to push back
 
 **Next**: `TaskGet(<id>)` to review triage in-session,
-then `/respond --continue` to finalize for `/prepare`.
+then `/respond --continue` to finalize for `/implement`.
 ```
 
 ## Output Format — Continuation
@@ -235,9 +236,9 @@ then `/respond --continue` to finalize for `/prepare`.
 **Finalized**: N items to action, N replies drafted
 
 **Plan**: `~/.claude/plans/<project>/respond-pr-<N>.md` — review/edit
-in `$EDITOR` before `/prepare`.
+in `$EDITOR` before `/implement`.
 
-**Next**: `/prepare` to create tasks, or edit the plan file first.
+**Next**: `/implement` to create tasks, or edit the plan file first.
 Notes field has PR reply drafts — review with `TaskGet(<id>)`.
 ```
 

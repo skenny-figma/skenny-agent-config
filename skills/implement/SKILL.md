@@ -4,7 +4,7 @@ description: >
   Execute implementation plans from tasks. Detects epics and spawns
   teams for parallel work.
   Triggers: 'implement', 'build this', 'execute plan', 'start work'.
-allowed-tools: Bash, Read, Task, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, TeamCreate, TeamDelete
+allowed-tools: Bash, Read, Glob, Write, Task, SendMessage, TaskCreate, TaskUpdate, TaskList, TaskGet, TeamCreate, TeamDelete
 argument-hint: "[task-id] [--solo] [--team]"
 ---
 
@@ -32,7 +32,53 @@ Bash is for read-only orchestration only (git status, team config reads).
 - Else: `TaskList()` → find first in_progress task (Solo Mode)
 - Else: `TaskList()` → find first pending task with empty
   blockedBy (Solo Mode)
-- Nothing found → exit, suggest `/research` then `/prepare`
+- Nothing found → proceed to **Step 1b: Auto-Prepare**
+
+## Step 1b: Auto-Prepare
+
+If Step 1 found no tasks, check for plan files before exiting.
+
+1. Determine project:
+   `basename $(git rev-parse --show-toplevel 2>/dev/null || pwd)`
+2. Scan: `ls -t ~/.claude/plans/<project>/*.md 2>/dev/null | head -1`
+3. If no plan file → exit, suggest `/research`
+4. Read the plan file. Skip YAML frontmatter (between `---` lines).
+5. Parse phases: find `**Phase N: Description**` or `### Phase N:`
+   markers. Extract numbered list items under each phase.
+6. Detect dependencies:
+   - Default: sequential (each phase blocks the next)
+   - Parallel if phase text contains: "parallel with Phase N",
+     "independent of", "no dependency"
+7. Create epic:
+   ```
+   TaskCreate(
+     subject: "<plan title from first heading>",
+     description: "<one-paragraph summary>\n\n## Success Criteria\n
+       <3-5 outcomes>",
+     activeForm: "Implementing <title>",
+     metadata: { type: "epic", priority: 1 }
+   )
+   ```
+8. Copy full plan text into epic:
+   `TaskUpdate(epicId, metadata: { design: "<full plan text>" })`
+9. For each phase:
+   ```
+   TaskCreate(
+     subject: "Phase N: <description>",
+     description: "## Acceptance Criteria\n<checklist from phase>",
+     activeForm: "Phase N: <description>",
+     metadata: { type: "task", parent_id: "<epic-id>", priority: 2 }
+   )
+   ```
+10. Set blockedBy for sequential phases:
+    `TaskUpdate(phaseN+1, addBlockedBy: ["<phaseN-id>"])`
+11. Archive plan file:
+    ```
+    mkdir -p ~/.claude/plans/<project>/archive/
+    mv <plan-file> ~/.claude/plans/<project>/archive/
+    ```
+12. `TaskUpdate(epicId, status: "in_progress")`
+13. Proceed to Step 2 with the new epic.
 
 ## Step 2: Classify
 
@@ -40,11 +86,12 @@ Bash is for read-only orchestration only (git status, team config reads).
 
 **Epic?** → `metadata.type == "epic"` → **Swarm Mode** (unless `--solo`)
 **`--team` flag + not an epic?** → **Ad-hoc Swarm Mode** (see below)
-**Task with parent?** → has `metadata.parent_id` → read parent for context, **Solo Mode**
+**Task with parent?** → has `metadata.parent_id` → read parent
+  for context, **Solo Mode**
 **Standalone task?** → **Solo Mode**
   - If `--team` was requested but only 1 standalone task exists,
-    report: "Solo Mode: only 1 task found. Use `/prepare` to create
-    an epic with multiple phases for team execution."
+    report: "Solo Mode: only 1 task found. Run `/research` first
+    to create a plan with multiple phases."
 
 ### Ad-hoc Swarm Mode
 
@@ -260,8 +307,7 @@ delegate to a Task agent using the Solo Worker Prompt Template.
 ## Error Handling
 
 **No work found:**
-- No task → suggest `/research` then `/prepare`
-- Epic has no children → suggest `/prepare`
+- No task and no plan file → suggest `/research`
 
 **Worker failures:**
 - Claim fails (TaskUpdate errors) → skip task, report

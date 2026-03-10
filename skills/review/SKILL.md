@@ -613,9 +613,9 @@ For `--team` reviews, add:
 - <count> consensus findings
 
 **Plan**: `~/.claude/plans/<project>/review-<slug>.md` —
-review/edit in `$EDITOR` before `/prepare`.
+review/edit in `$EDITOR` before `/implement`.
 
-**Next**: `/prepare` to create tasks, or edit the plan first.
+**Next**: `/implement` to create tasks, or edit the plan first.
 
 ## Guidelines
 

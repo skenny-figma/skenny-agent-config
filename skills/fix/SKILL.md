@@ -54,7 +54,7 @@ Create ONE task containing all findings:
 
 - TaskCreate:
   - subject: "Fix: <brief-summary-of-feedback>"
-  - description: "All feedback items addressed. Findings stored in task metadata design field as phased structure. Consumable by /prepare for epic creation."
+  - description: "All feedback items addressed. Findings stored in task metadata design field as phased structure. Consumable by `/implement` for epic creation."
   - metadata: {type: "task", priority: 2}
 - TaskUpdate(taskId, status: "in_progress")
 
@@ -110,9 +110,9 @@ Output format:
 **Findings**: N items (X bugs, Y tasks, Z features)
 
 **Plan**: `~/.claude/plans/<project>/fix-<slug>.md` — review/edit in
-`$EDITOR` before `/prepare`.
+`$EDITOR` before `/implement`.
 
-**Next**: `/prepare` to create tasks, or edit the plan file first.
+**Next**: `/implement` to create tasks, or edit the plan file first.
 ```
 
 ## Style Rules
