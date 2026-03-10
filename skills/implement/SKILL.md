@@ -53,19 +53,27 @@ If Step 1 found no tasks, check for plan files before exiting.
    ```
    TaskCreate(
      subject: "<plan title from first heading>",
-     description: "<one-paragraph summary>\n\n## Success Criteria\n
-       <3-5 outcomes>",
+     description: "<one-paragraph summary>\n\n## Design Rationale\n
+       <plan's Recommendation section — approach chosen and why>\n\n
+       ## Success Criteria\n<3-5 outcomes>",
      activeForm: "Implementing <title>",
      metadata: { type: "epic", priority: 1 }
    )
    ```
 8. Copy full plan text into epic:
    `TaskUpdate(epicId, metadata: { design: "<full plan text>" })`
-9. For each phase:
+9. For each phase, build a rich description by extracting from the plan:
+   - **Context**: file paths from plan's "Current State" section relevant
+     to this phase, plus a one-line rationale from plan's "Recommendation"
+   - **Acceptance Criteria**: the checklist items under the phase
+   - **Verification**: test expectations or edge cases from plan (if any)
    ```
    TaskCreate(
      subject: "Phase N: <description>",
-     description: "## Acceptance Criteria\n<checklist from phase>",
+     description: "## Context\n<relevant file paths from Current State>\n
+       <one-line rationale from Recommendation>\n\n
+       ## Acceptance Criteria\n<checklist from phase>\n\n
+       ## Verification\n<test expectations or edge cases, if any>",
      activeForm: "Phase N: <description>",
      metadata: { type: "task", parent_id: "<epic-id>", priority: 2 }
    )

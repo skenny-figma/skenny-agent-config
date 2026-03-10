@@ -5,7 +5,7 @@ description: >
   implementation plans.
   Triggers: 'research', 'investigate', 'explore'.
 allowed-tools: Bash, Read, Write, Task, SendMessage, TaskCreate, TaskUpdate, TaskGet, TaskList, TeamCreate, TeamDelete
-argument-hint: "<topic or question> | <task-id> | --continue | --discard | --team"
+argument-hint: "<topic or question> | <task-id> | --continue | --discard | --team | --depth <medium|high|max>"
 ---
 
 # Research
@@ -21,6 +21,13 @@ Orchestrate research via native tasks and Task delegation.
 - `--discard [slug]` — delete the most recent (or specified) plan
   file without preparing it
 - `--team` — force team mode for parallel multi-topic research
+- `--depth <level>` — control research thoroughness (default: medium)
+  - `medium` — key files, file paths without snippets, 3-5 phases
+  - `high` — all relevant files, 2-level call chains, line refs
+    with brief code context, dependency chains, 5-7 phases
+  - `max` — exhaustive: all touched modules, full call chains,
+    full dependency graph, annotated snippets, cross-reference
+    matrix, 7+ phases with sub-steps and verification criteria
 
 ## Plan Directory
 
@@ -48,6 +55,7 @@ topic: <original topic text>
 project: <absolute path to current working directory>
 created: <ISO 8601 timestamp>
 status: draft | prepared
+depth: <medium|high|max>
 ---
 
 <full research findings in standard structure>
@@ -67,12 +75,16 @@ status: draft | prepared
    )
    ```
 2. `TaskUpdate(taskId, status: "in_progress")`
-3. Classify topics — parse $ARGUMENTS to determine mode:
-   - Numbered list items (`1.` / `2.` / `-` / `*`) → extract
-     each as a topic
-   - Comma-separated phrases with "and" → split on commas
-   - Multiple sentences ending in `?` → each is a topic
-   - `--team` flag present → force team mode
+3. Parse flags and classify topics from $ARGUMENTS:
+   - Extract `--depth <level>` if present (medium|high|max,
+     default: medium). Error if value is not one of the three.
+   - Extract `--team` flag if present.
+   - Strip extracted flags from $ARGUMENTS; remainder is topic text.
+   - Classify remaining topic text to determine mode:
+     - Numbered list items (`1.` / `2.` / `-` / `*`) → extract
+       each as a topic
+     - Comma-separated phrases with "and" → split on commas
+     - Multiple sentences ending in `?` → each is a topic
 
    If 2+ topics detected OR `--team` flag → **Team Mode** (step 4b)
    Otherwise → **Solo Mode** (step 4a)
@@ -127,7 +139,8 @@ status: draft | prepared
         <frontmatter + findings>)`
    b. Store in task:
       `TaskUpdate(taskId, metadata: {
-        design: "<findings>", plan_file: "<slug>.md" })`
+        design: "<findings>", plan_file: "<slug>.md",
+        depth: "<level>" })`
    For Team Mode, run aggregation before storing.
 
 6. Report results (see Output Format)
@@ -146,11 +159,15 @@ status: draft | prepared
      `cp ~/.claude/plans/<project>/archive/<file> ~/.claude/plans/<project>/`
      Report: "Restored archived plan: `<filename>`"
 2. Load existing context:
-   - From task: read `metadata.design`
-   - From plan file: `Read` the file content (skip frontmatter)
+   - From task: read `metadata.design` and `metadata.depth`
+   - From plan file: `Read` the file content, extract `depth`
+     from frontmatter (skip rest of frontmatter)
+   - If user provides `--depth` flag, use it (override).
+     Otherwise use the stored depth (default: medium).
 3. Spawn Explore agent with previous findings prepended:
-   "Previous findings:\n<existing-design>\n\nContinue the
-   research focusing on: <new-instructions>"
+   "Previous findings:\n<existing-design>\n\n
+   <inject the depth block for the resolved depth level>\n\n
+   Continue the research focusing on: <new-instructions>"
 4. Update both stores:
    a. `Write` updated findings to plan file
    b. `TaskUpdate(taskId, metadata: { design: "<updated>" })`
@@ -178,24 +195,30 @@ Spawn Task (subagent_type=Explore, model=opus) with:
 Research <topic> thoroughly. Return your COMPLETE findings as
 text output (do NOT write files).
 
-Set depth based on scope: skim for targeted lookups, dig deep
-for architecture and cross-cutting concerns.
+<inject the depth block for the selected --depth level>
 
 Structure:
 
 1. **Current State**: What exists now (files, patterns, architecture)
 2. **Recommendation**: Suggested approach with rationale
-3. **Next Steps**: Implementation phases using format:
+3. **Next Steps**: 3-7 phases, each independently testable.
+
+Each step must include:
+- **Action**: verb + target (what to do)
+- **Location**: file path with line ref when modifying existing code
+- **Context**: why, when non-obvious
+- **Done signal**: how to verify completion
+
+Example step: "Add rate-limit middleware to `src/api/router.ts:45`
+— wrap existing handler with `rateLimit()`. Verify: returns 429
+after 100 req/min."
 
 **Phase 1: <Description>**
-1. First step
-2. Second step
+1. <step with action, location, context, done signal>
+2. ...
 
 **Phase 2: <Description>**
-3. Third step
-4. Fourth step
-
-Aim for 3-7 phases. Each phase should be independently testable.
+3. ...
 ```
 
 ### Team Worker Prompt
@@ -224,11 +247,15 @@ topic and report back.
 
 2. Research thoroughly. Use Read, Grep, Glob, Bash for
    investigation. Return findings as text (do NOT write files).
+   <inject the depth block for the selected --depth level>
 
 3. Structure findings:
    **Current State**: What exists now
    **Recommendation**: Suggested approach
-   **Next Steps**: 2-4 implementation phases
+   **Next Steps**: 3-7 phases, each independently testable.
+   Each step: action (verb + target), location (file path
+   with line ref), context (why, if non-obvious), done signal
+   (how to verify).
 
 4. When done, complete the task with your findings:
    TaskUpdate(taskId="<task-id>", status="completed",
@@ -245,6 +272,36 @@ topic and report back.
 - Only research — do NOT modify any files
 - If blocked, report via SendMessage instead of guessing
 - Do NOT work on other topics after completing yours
+```
+
+## Depth Levels
+
+Both solo and team worker prompts contain a placeholder:
+`<inject the depth block for the selected --depth level>`.
+Replace it with the block matching the parsed `--depth` value:
+
+**medium** (default):
+```
+Read key files to understand architecture. Report file paths
+without code snippets. Produce 3-5 phases in Next Steps.
+```
+
+**high**:
+```
+Read all relevant files and trace call chains 2 levels deep.
+Include line references and brief code context for non-obvious
+patterns. Map dependency chains between affected modules.
+Produce 5-7 phases in Next Steps, each independently testable.
+```
+
+**max**:
+```
+Exhaustive research. Read all touched modules, trace every call
+chain to its origin, map the full dependency graph. Provide
+annotated code snippets for all findings. Build a cross-reference
+matrix of callers, shared state, and coupling between components.
+Produce 7+ phases in Next Steps with sub-steps and explicit
+verification criteria per phase.
 ```
 
 ## Team Mode Aggregation
