@@ -4,7 +4,7 @@ description: >
   Senior engineer code review, filing findings as tasks.
   Triggers: 'review code', 'code review', 'review my changes'.
 allowed-tools: Bash, Read, Write, Task, SendMessage, TaskCreate, TaskUpdate, TaskGet, TaskList, TeamCreate, TeamDelete
-argument-hint: "[file-pattern] [--team] | <task-id> | --continue"
+argument-hint: "[file-pattern] | <task-id> | --continue"
 ---
 
 # Review
@@ -22,8 +22,6 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
 - `<file-pattern>` — new review, optionally filtering files
 - `<task-id>` — continue existing review task
 - `--continue` — resume most recent in_progress review
-- `--team` — multi-perspective team review (architect,
-  code-quality, devil's-advocate, operations)
 
 ## Workflow
 
@@ -44,32 +42,9 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
      - metadata: {type: "task", priority: 2}
    - TaskUpdate(taskId, status: "in_progress")
 
-3. **Determine review mode**
+3. All reviews use multi-perspective team mode.
 
-   | Scenario | Flag | Mode |
-   |----------|------|------|
-   | Few files (≤15) | (none) | Solo |
-   | Large changeset (>15) | (none) | Split |
-   | Any file count | `--team` | Perspective |
-
-4. **Execute review** by mode:
-   - **Solo Mode** → step 5
-   - **Split Mode** → step 6
-   - **Perspective Mode** → step 7
-
-5. **Solo Mode**: Spawn single Task subagent
-   (see Review Subagent Prompt)
-
-6. **Split Mode**: When >15 changed files (no `--team`):
-   a. Split changed files into groups of ~8
-   b. Spawn parallel Task subagents (one per group), all in
-      a single message for true parallel execution
-   c. Each subagent reviews its file group using the solo prompt
-   d. Aggregate: merge Phase 1/2/3 findings across groups,
-      deduplicate cross-file findings
-   e. Store consolidated findings in design field
-
-7. **Perspective Mode**: Create a Claude team for coordinated
+4. **Perspective Mode**: Create a Claude team for coordinated
    multi-perspective review.
 
    a. Gather context:
@@ -90,22 +65,28 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
    c. Spawn ALL FOUR workers in ONE message.
       CRITICAL: All 4 Task calls MUST be in the SAME response.
       Sequential spawning causes 4x slower execution.
+      Each worker runs in an isolated worktree (review is
+      read-only, so worktrees auto-cleanup safely).
       ```
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="architect", model=opus,
+           isolation="worktree",
            prompt=<Architect Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="code-quality", model=opus,
+           isolation="worktree",
            prompt=<Code Quality Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="devils-advocate", model=opus,
+           isolation="worktree",
            prompt=<Devil's Advocate Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="operations", model=opus,
+           isolation="worktree",
            prompt=<Operations Prompt + Team Protocol>)
       ```
       Inject `<lead-name>` and gathered context into each
@@ -117,15 +98,15 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
       check TaskList, proceed when all non-stuck done. Tag
       partial results: "Note: <perspective> did not return
       results."
-      If 2+ workers fail → fall back to Solo Mode, note that
-      team review was attempted.
+      If 2+ workers fail → aggregate available results, note
+      which perspectives did not return findings.
 
    e. Aggregate findings (see Perspective Aggregation).
 
    f. Cleanup: `SendMessage(type="shutdown_request")` to each
       worker. After all acknowledge → `TeamDelete`.
 
-8. **Store findings**
+5. **Store findings**
    a. Generate a kebab-case slug from the branch name
       (lowercase, strip filler words, replace non-alnum
       with hyphens, max 50 chars)
@@ -147,7 +128,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
         plan_file: "review-<slug>.md" })`
    d. Leave task in_progress
 
-9. **Report results** (see Output Format)
+6. **Report results** (see Output Format)
 
 ### Continue Review
 
@@ -157,21 +138,14 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
      with subject starting "Review:"
 2. Load existing context:
    TaskGet(taskId) → extract metadata.design
-3. Detect original review type:
-   - If design contains `[architect]` or `**Consensus**` tags
-     → was a perspective review → re-spawn in Perspective Mode
-   - Otherwise → re-spawn as Solo Mode
-4. Spawn subagent(s) with previous findings prepended:
-   - Solo: "Previous findings:\n<design>\n\nContinue
-     reviewing..."
-   - Perspective: 4 workers, each with "Previous team review
-     findings:\n<design>\n\nContinue reviewing from the
-     <perspective> perspective..."
-5. Aggregate new findings with previous (re-run Perspective
-   Aggregation if team continuation)
-6. Update design:
+3. Re-spawn in Perspective Mode: 4 workers, each with "Previous
+   team review findings:\n<design>\n\nContinue reviewing from
+   the <perspective> perspective..."
+4. Aggregate new findings with previous (re-run Perspective
+   Aggregation)
+5. Update design:
    `TaskUpdate(taskId, metadata: {design: "<updated>"})`
-7. Report results
+6. Report results
 
 ## Review Scope
 
@@ -186,7 +160,7 @@ existing codebase. The diff is the primary review surface.
   (security vulnerability, data loss, crash) — not style,
   not "while we're here" improvements
 
-This principle applies to all review modes and prompts below.
+This principle applies to all review prompts below.
 
 ## Large Diff Handling
 
@@ -194,57 +168,9 @@ If total diff exceeds 3000 lines: for each file with >200 lines
 of diff, truncate to first 50 + last 50 lines. Note truncations
 in the prompt so subagents know to `Read` full files if needed.
 
-Applies to Split Mode and Perspective Mode when gathering diffs.
+Applies when gathering diffs for Perspective Mode.
 
 ## Prompt Templates
-
-### Solo / Split Review Prompt
-
-Spawn Task (subagent_type=Explore, model=opus) with:
-
-```
-You are a senior engineer performing a code review.
-
-## Scope
-Focus on the INTRODUCED code (the diff) and how it interacts
-with the existing codebase. Only flag pre-existing code if it
-has a truly critical flaw (security, data loss, crash).
-
-## Branch
-<branch-name>
-
-## Commits
-<git log main..HEAD --format="%h %s">
-
-## Changed Files
-<file list>
-
-## Diffs
-<git diff main...HEAD for each file>
-
-Review each file for:
-- **Architecture**: patterns, complexity, simpler alternatives
-- **Code quality**: readability, edge cases, naming, error handling
-- **Security/Perf**: input validation, resource mgmt, async handling
-- **Testing**: coverage, edge cases, realistic failure modes
-
-Return COMPLETE findings as text (do NOT write files). Structure
-findings as phases for downstream task creation:
-
-**Phase 1: Critical Issues**
-<bugs, security issues, logic errors — numbered list>
-
-**Phase 2: Design Improvements**
-<architecture, complexity, naming — numbered list>
-
-**Phase 3: Testing Gaps**
-<missing tests, edge cases, failure modes — numbered list>
-
-Only include phases that have findings. Skip empty phases.
-For each finding include: file, line(s), what's wrong, suggested fix.
-Don't flag style preferences, hypothetical edge cases, or
-pre-existing flaws in unchanged code.
-```
 
 ### Perspective Prompts
 
@@ -606,8 +532,6 @@ impactful first.
 - <critical issues count> critical issues
 - <improvements count> design improvements
 - <testing gaps count> testing gaps
-
-For `--team` reviews, add:
 
 **Consensus Findings** (flagged by multiple perspectives):
 - <count> consensus findings
