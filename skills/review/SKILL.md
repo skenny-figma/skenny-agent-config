@@ -4,7 +4,7 @@ description: >
   Senior engineer code review, filing findings as tasks.
   Triggers: 'review code', 'code review', 'review my changes'.
 allowed-tools: Bash, Read, Write, Task, SendMessage, TaskCreate, TaskUpdate, TaskGet, TaskList, TeamCreate, TeamDelete
-argument-hint: "[file-pattern] | <task-id> | --continue"
+argument-hint: "[file-pattern] [<branch|PR>] | <task-id> | --continue"
 ---
 
 # Review
@@ -20,6 +20,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
 ## Arguments
 
 - `<file-pattern>` — new review, optionally filtering files
+- `<branch|PR>` — review a specific branch or PR number
 - `<task-id>` — continue existing review task
 - `--continue` — resume most recent in_progress review
 
@@ -27,29 +28,52 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
 
 ### New Review
 
-1. **Get branch context**
-   - `git branch --show-current` → exit if main/master
+1. **Resolve target**
+   Parse `$ARGUMENTS` for a branch/PR target:
+   - Numeric (e.g. `123`) → resolve via
+     `gh pr view "$ARG" --json headRefName -q .headRefName`,
+     then `git checkout` the resolved branch
+   - String that is not a task-id, `--continue`, or file-pattern
+     → treat as branch name, `git checkout "$ARG"`
+   - Empty → current branch (existing behavior)
+   Store the resolved branch name in `$REVIEW_BRANCH`.
+
+2. **Enter worktree**
+   Create a shared worktree so the review is isolated from the
+   user's working directory:
+   ```
+   EnterWorktree(name="review-<slug>")
+   git fetch origin $REVIEW_BRANCH
+   git checkout $REVIEW_BRANCH || git checkout -b $REVIEW_BRANCH origin/$REVIEW_BRANCH
+   ```
+   When no explicit target was given (reviewing current branch),
+   still enter the worktree for isolation — fetch and checkout
+   the current branch name resolved in step 1.
+
+3. **Get branch context**
+   - `git branch --show-current` → if main/master AND no
+     explicit target was given in step 1, exit
    - `git diff main...HEAD --name-only` → changed files
    - Filter by `$ARGUMENTS` pattern if provided
    - Exclude: lock files, dist/, build/, coverage/, binaries
 
-2. **Create review task**
+4. **Create review task**
    - TaskCreate:
      - subject: "Review: {branch}"
      - description: "All changed files reviewed for critical
        issues, design, and testing gaps. Findings stored in
        task metadata design field as phased structure."
-     - metadata: {type: "task", priority: 2}
+     - metadata: {type: "task", priority: 2, branch: "$REVIEW_BRANCH"}
    - TaskUpdate(taskId, status: "in_progress")
 
-3. All reviews use multi-perspective team mode.
+5. All reviews use multi-perspective team mode.
 
-4. **Perspective Mode**: Create a Claude team for coordinated
+6. **Perspective Mode**: Create a Claude team for coordinated
    multi-perspective review.
 
    a. Gather context:
       ```
-      branch=$(git branch --show-current)
+      branch=$REVIEW_BRANCH
       log=$(git log main..HEAD --format="%h %s")
       files=$(git diff main...HEAD --name-only)
       diff=$(git diff main...HEAD)
@@ -65,28 +89,25 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
    c. Spawn ALL FOUR workers in ONE message.
       CRITICAL: All 4 Task calls MUST be in the SAME response.
       Sequential spawning causes 4x slower execution.
-      Each worker runs in an isolated worktree (review is
-      read-only, so worktrees auto-cleanup safely).
+      Workers inherit the lead's worktree cwd (created in
+      step 2). Review is read-only so shared access is safe.
+      Do NOT set isolation="worktree" on workers.
       ```
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="architect", model=opus,
-           isolation="worktree",
            prompt=<Architect Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="code-quality", model=opus,
-           isolation="worktree",
            prompt=<Code Quality Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="devils-advocate", model=opus,
-           isolation="worktree",
            prompt=<Devil's Advocate Prompt + Team Protocol>)
       Task(subagent_type="general-purpose",
            team_name="review-<branch-slug>",
            name="operations", model=opus,
-           isolation="worktree",
            prompt=<Operations Prompt + Team Protocol>)
       ```
       Inject `<lead-name>` and gathered context into each
@@ -99,14 +120,17 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
       partial results: "Note: <perspective> did not return
       results."
       If 2+ workers fail → aggregate available results, note
-      which perspectives did not return findings.
+      which perspectives did not return findings, then clean up:
+      `SendMessage(type="shutdown_request")` to each worker,
+      `TeamDelete`, `ExitWorktree(action="remove")`.
 
    e. Aggregate findings (see Perspective Aggregation).
 
    f. Cleanup: `SendMessage(type="shutdown_request")` to each
-      worker. After all acknowledge → `TeamDelete`.
+      worker. After all acknowledge → `TeamDelete` →
+      `ExitWorktree(action="remove")`.
 
-5. **Store findings**
+7. **Store findings**
    a. Generate a kebab-case slug from the branch name
       (lowercase, strip filler words, replace non-alnum
       with hyphens, max 50 chars)
@@ -128,7 +152,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
         plan_file: "review-<slug>.md" })`
    d. Leave task in_progress
 
-6. **Report results** (see Output Format)
+8. **Report results** (see Output Format)
 
 ### Continue Review
 
@@ -137,15 +161,27 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
    - If `--continue` → TaskList(), find first in_progress task
      with subject starting "Review:"
 2. Load existing context:
-   TaskGet(taskId) → extract metadata.design
-3. Re-spawn in Perspective Mode: 4 workers, each with "Previous
+   TaskGet(taskId) → extract metadata.design and metadata.branch
+   - If `metadata.branch` exists → set `$REVIEW_BRANCH` to it
+   - If not (legacy tasks) → fall back to current branch:
+     `$REVIEW_BRANCH=$(git branch --show-current)`
+3. Enter worktree and checkout branch:
+   ```
+   EnterWorktree(name="review-<slug>")
+   git fetch origin $REVIEW_BRANCH
+   git checkout $REVIEW_BRANCH || git checkout -b $REVIEW_BRANCH origin/$REVIEW_BRANCH
+   ```
+4. Re-spawn in Perspective Mode: 4 workers, each with "Previous
    team review findings:\n<design>\n\nContinue reviewing from
    the <perspective> perspective..."
-4. Aggregate new findings with previous (re-run Perspective
+5. Aggregate new findings with previous (re-run Perspective
    Aggregation)
-5. Update design:
+6. Cleanup: `SendMessage(type="shutdown_request")` to each
+   worker. After all acknowledge → `TeamDelete` →
+   `ExitWorktree(action="remove")`.
+7. Update design:
    `TaskUpdate(taskId, metadata: {design: "<updated>"})`
-6. Report results
+8. Report results
 
 ## Review Scope
 
