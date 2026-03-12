@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.{ts,js,py,go,rs,sh,lua}"
+---
+
 # Comment Quality
 
 Every comment must say something the code cannot say for itself.

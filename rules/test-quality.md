@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*test*"
+  - "**/*spec*"
+---
+
 # Test Quality
 
 Every test must answer: **"What bug would this catch?"**

@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.{ts,js,py,go,rs,sh,lua}"
+---
+
 # Coding Preferences
 
 - Prefer simple, readable code over clever abstractions
