@@ -20,12 +20,9 @@
 
 ## Context Budget
 
-- Monitor context usage carefully throughout sessions
 - Pipe long command output through `tail`/`head` to limit volume
 - Summarize large file contents rather than reading in full when
   a summary suffices
-- When context is running low, prefer finishing current work over
-  starting new tasks
 
 ## Task Tracking
 

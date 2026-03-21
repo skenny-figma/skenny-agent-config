@@ -56,6 +56,14 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
    - `git diff main...HEAD --name-only` → changed files
    - Filter by `$ARGUMENTS` pattern if provided
    - Exclude: lock files, dist/, build/, coverage/, binaries
+   - Fetch PR context:
+     ```
+     pr_context=$(gh pr view $PR_NUM --json title,body,labels \
+       -q '{title,body,labels}' 2>/dev/null || echo "")
+     ```
+     Use `$PR_NUM` if `$ARGUMENTS` resolved to a PR number in
+     step 1, otherwise omit it (uses current branch). Truncate
+     body to first 500 words. Store as `$PR_CONTEXT`.
 
 4. **Create review task**
    - TaskCreate:
@@ -66,9 +74,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
      - metadata: {type: "task", priority: 2, branch: "$REVIEW_BRANCH"}
    - TaskUpdate(taskId, status: "in_progress")
 
-5. All reviews use multi-perspective team mode.
-
-6. **Perspective Mode**: Create a Claude team for coordinated
+5. **Perspective Mode**: Create a Claude team for coordinated
    multi-perspective review.
 
    a. Gather context:
@@ -77,6 +83,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
       log=$(git log main..HEAD --format="%h %s")
       files=$(git diff main...HEAD --name-only)
       diff=$(git diff main...HEAD)
+      pr_context=$PR_CONTEXT
       ```
       Apply Large Diff Handling when gathering context.
 
@@ -169,7 +176,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
       worker. After all acknowledge → `TeamDelete` →
       `ExitWorktree(action="remove")`.
 
-7. **Store findings**
+6. **Store findings**
    a. Generate a kebab-case slug from the branch name
       (lowercase, strip filler words, replace non-alnum
       with hyphens, max 50 chars)
@@ -191,7 +198,7 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
         plan_file: "review-<slug>.md" })`
    d. Leave task in_progress
 
-8. **Report results** (see Output Format)
+7. **Report results** (see Output Format)
 
 ### Continue Review
 
@@ -210,19 +217,25 @@ Plans live at `~/.claude/plans/<project>/review-<slug>.md`.
    git fetch origin $REVIEW_BRANCH
    git checkout $REVIEW_BRANCH || git checkout -b $REVIEW_BRANCH origin/$REVIEW_BRANCH
    ```
-4. Re-spawn in Perspective Mode: 4 core workers + language
+4. Fetch PR context (same as step 3 of New Review):
+   ```
+   pr_context=$(gh pr view --json title,body,labels \
+     -q '{title,body,labels}' 2>/dev/null || echo "")
+   ```
+   Truncate body to first 500 words. Store as `$PR_CONTEXT`.
+5. Re-spawn in Perspective Mode: 4 core workers + language
    reviewer if `$LANG` detected + coherence reviewer if
-   `$HAS_PLAN` (same as step 6), each with
+   `$HAS_PLAN` (same as step 5 of New Review), each with
    "Previous team review findings:\n<design>\n\nContinue
    reviewing from the <perspective> perspective..."
-5. Aggregate new findings with previous (re-run Perspective
+6. Aggregate new findings with previous (re-run Perspective
    Aggregation)
-6. Cleanup: `SendMessage(type="shutdown_request")` to each
+7. Cleanup: `SendMessage(type="shutdown_request")` to each
    worker. After all acknowledge → `TeamDelete` →
    `ExitWorktree(action="remove")`.
-7. Update design:
+8. Update design:
    `TaskUpdate(taskId, metadata: {design: "<updated>"})`
-8. Report results
+9. Report results
 
 ## Review Scope
 
@@ -275,6 +288,10 @@ with the existing codebase. Only flag pre-existing design flaws
 if they are truly critical (e.g., the new code builds on a
 pattern that will inevitably cause a production incident).
 
+## PR Context
+<pr_context — title, description, labels. If empty: "No PR
+found — infer intent from commits below.">
+
 ## Branch
 <branch-name>
 
@@ -298,6 +315,9 @@ Review each file strictly through an architectural lens:
   baked into the design?
 - **Simpler alternatives**: Could the same goal be achieved with
   less complexity? Any unnecessary indirection?
+- **Approach alignment**: Does this approach achieve the stated
+  goal with appropriate complexity? Could the PR's objective be
+  met with a fundamentally different strategy?
 
 ## Shared Concerns
 
@@ -352,6 +372,10 @@ with the existing codebase. Only flag pre-existing code quality
 issues if they are truly critical (e.g., a bug the new code
 will trigger or depend on).
 
+## PR Context
+<pr_context — title, description, labels. If empty: "No PR
+found — infer intent from commits below.">
+
 ## Branch
 <branch-name>
 
@@ -375,6 +399,9 @@ Review each file strictly through a code quality lens:
   conventions in the codebase?
 - **Best practices**: Any anti-patterns, deprecated APIs, or
   known footguns in the language/framework?
+- **Intent alignment**: Does the implementation match the
+  described intent in the PR? Any disconnect between what the
+  PR says and what the code does?
 
 ## Shared Concerns
 
@@ -429,6 +456,10 @@ with the existing codebase. Only flag pre-existing vulnerabilities
 if they are truly critical (e.g., a security hole the new code
 exposes or relies on).
 
+## PR Context
+<pr_context — title, description, labels. If empty: "No PR
+found — infer intent from commits below.">
+
 ## Branch
 <branch-name>
 
@@ -459,6 +490,9 @@ Review each file by trying to break it:
   change? What if load increases 10x? What if the data model
   evolves? Any implicit coupling to current behavior that will
   silently break?
+- **Approach-level risks**: Are there fundamental approach risks
+  the author may not have considered? Is this solving the right
+  problem?
 
 ## Shared Concerns
 
@@ -512,6 +546,10 @@ with the existing codebase. Only flag pre-existing operational
 issues if they are truly critical (e.g., the new code makes an
 existing monitoring gap actively dangerous).
 
+## PR Context
+<pr_context — title, description, labels. If empty: "No PR
+found — infer intent from commits below.">
+
 ## Branch
 <branch-name>
 
@@ -538,6 +576,9 @@ Review each file through an operational lens:
 - **Incident debuggability**: If this breaks at 3am, can the
   on-call engineer diagnose it from logs and metrics without
   reading the source?
+- **Operational approach**: Is this the right operational
+  approach for the stated goal? Would a different strategy
+  reduce operational burden?
 
 ## Shared Concerns
 
@@ -647,6 +688,10 @@ Only spawned when `$LANG` is set. Use the matching block below.
 ```
 You are a senior <$LANG> engineer with deep expertise in idiomatic
 patterns and common pitfalls specific to the language ecosystem.
+
+## PR Context
+<pr_context — title, description, labels. If empty: "No PR
+found — infer intent from commits below.">
 
 ## Language Focus
 
@@ -792,6 +837,30 @@ Compare findings across perspectives. Same file + same issue
 area flagged by 2+ perspectives = consensus finding. Tag with
 all agreeing sources: `[architect, code-quality]`.
 
+### Step 2.5: Evaluate approach
+
+Using PR context and all perspective findings, assess:
+
+1. **Goal alignment**: Does the diff achieve what the PR
+   description states? If no PR description, infer intent from
+   commits and note "No PR description — inferred intent:
+   <summary>".
+
+2. **Approach fitness**: Given the stated goal, is this the
+   right approach? Consider: simpler alternatives (Architect),
+   fundamental risks (Devil's Advocate), operational concerns
+   (Operations).
+
+3. **Scope assessment**: Is the PR appropriately scoped? Too
+   broad (multiple unrelated changes)? Too narrow (partial
+   solution creating tech debt)?
+
+Rate: Sound | Minor Concerns | Significant Concerns |
+Alternative Recommended
+
+If "Alternative Recommended", describe the alternative in 2-3
+sentences with enough detail for the author to evaluate.
+
 ### Step 3: Build unified output
 
 ```
@@ -804,6 +873,10 @@ all agreeing sources: `[architect, code-quality]`.
 - **Design Coherence**: <1-2 sentence overall assessment>
 # Only if language reviewer was spawned:
 - **Language (<$LANG>)**: <1-2 sentence overall assessment>
+
+**Approach Assessment**: <rating>
+<1-3 sentences explaining the rating. If alternative
+recommended, describe it here.>
 
 **Consensus** (2+ perspectives agree)
 - Finding [perspective-a, perspective-b]
@@ -847,6 +920,11 @@ Most impactful first.
 **Review Task**: #<id>
 
 **Summary**: <files reviewed, commits covered>
+
+**Approach Assessment**: <Sound | Minor Concerns |
+  Significant Concerns | Alternative Recommended>
+- <1-2 sentences on goal alignment and approach fitness>
+- <alternative if warranted, or omit>
 
 **Key Findings**:
 - <critical issues count> critical issues
