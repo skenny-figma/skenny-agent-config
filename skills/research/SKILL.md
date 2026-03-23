@@ -278,6 +278,7 @@ depth: <medium|high|max>
    Then delete it.
 4. Report: "Discarded plan: `<filename>`"
 
+
 ### Blueprints Commit
 
 If any blueprints files were written or moved during this session,
