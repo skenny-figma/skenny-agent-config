@@ -87,7 +87,24 @@ Triage PR review feedback and recommend actions.
 3. **Filter comments**
    - Resolved threads excluded at fetch time (GraphQL `isResolved` filter)
    - Outdated threads included with `[outdated]` body prefix
-   - Exclude bot comments (dependabot, github-actions, etc.)
+   - Triage by source and category:
+
+     | Category | Source | Action |
+     |----------|--------|--------|
+     | Code change request | Human reviewer | Always triage (agree/disagree/question) |
+     | Design question | Human reviewer | Always triage |
+     | Suggestion | Human reviewer | Always triage |
+     | Critical finding | Bot (claude-review, dependabot, github-actions) | Triage — fix if valid |
+     | Style/design nit | Bot | Skip (prevent bot review loops) |
+     | Acknowledgement | Any | Skip |
+     | Already resolved | Any | Skip |
+     | Author's own comments | PR author | Skip (already excluded) |
+
+     **Bot loop prevention**: When responding to bot findings, never
+     generate responses that could trigger another automated review
+     cycle. Address the code issue silently — don't reply to bot
+     threads unless the fix needs human discussion.
+
    - Exclude the PR author's own comments
    - Group by file path
 
