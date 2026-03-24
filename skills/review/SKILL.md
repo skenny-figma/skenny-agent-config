@@ -85,6 +85,10 @@ Orchestrate code review via tasks and Task delegation.
       ```
       Apply Large Diff Handling when gathering context.
 
+      **CRITICAL: Pass raw diffs to agents, not summaries.**
+      Agents need actual before/after lines to detect subtle
+      changes. Summarizing hides exactly the details that matter.
+
    a2. **Detect primary language** from changed file extensions:
        - `.go` → go
        - `.ts`, `.tsx` → typescript

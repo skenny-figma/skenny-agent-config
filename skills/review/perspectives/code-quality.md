@@ -55,11 +55,10 @@ Review each file strictly through a code quality lens:
 - **Intent alignment**: Does the implementation match the
   described intent in the PR? Any disconnect between what the
   PR says and what the code does?
-- **Dead code activation**: When code changes how an input is
-  consumed (ignored → used, hardcoded → dynamic, narrowed →
-  widened), grep for existing callers. Their existing arguments
-  may suddenly take effect or change meaning without their
-  knowledge.
+- **Dead code activation**: When the diff changes how inputs
+  are consumed, explore the codebase for existing callers.
+  Arguments or values that were previously inert may now take
+  effect — check whether existing callers are impacted.
 
 ## Shared Concerns
 

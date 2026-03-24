@@ -45,10 +45,9 @@ Review each file through an operational lens:
   broken from metrics alone?
 - **Deployment safety**: Can this be deployed incrementally? Is
   it backwards compatible with in-flight requests? Does it need
-  a feature flag or migration? If an interface now consumes
-  inputs differently (ignored → used, default changed, accepted
-  values widened), will existing callers' behavior change
-  silently on deploy?
+  a feature flag or migration? When interface behavior changes,
+  explore existing callers to determine if their behavior
+  changes silently on deploy.
 - **Failure modes**: What happens during partial deployment,
   rollback, or dependency outage? Any cascading failure risks?
 - **Resource footprint**: Any unbounded growth, missing timeouts,

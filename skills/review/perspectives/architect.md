@@ -54,11 +54,11 @@ Review each file strictly through an architectural lens:
 - **Approach alignment**: Does this approach achieve the stated
   goal with appropriate complexity? Could the PR's objective be
   met with a fundamentally different strategy?
-- **Backwards compatibility**: When changing how an existing
-  interface consumes its inputs (respecting a previously-ignored
-  param, widening accepted values, changing defaults), trace
-  existing callers. Ask: "who calls this today, what values do
-  they pass, and will their behavior change silently?"
+- **Backwards compatibility**: When the diff changes an existing
+  interface — its inputs, defaults, or behavior — explore the
+  codebase to find existing callers and consumers. Determine
+  whether their behavior changes silently. This is one of the
+  highest-value review findings.
 
 ## Shared Concerns
 

@@ -51,6 +51,11 @@ Review each file by trying to break it:
   Consider non-security assumptions too: assumes single-tenant,
   assumes ordered delivery, assumes idempotency, assumes
   backwards compatibility, assumes stable data model.
+- **Silent contract changes**: When the diff alters how an
+  interface behaves — what it accepts, returns, or what side
+  effects it has — explore the codebase for all callers.
+  Existing callers may rely on the old behavior in ways the
+  author didn't anticipate.
 - **Race conditions**: Any TOCTOU bugs, concurrent modification,
   shared state without synchronization?
 - **Adversarial input**: What if input is malformed, enormous,
