@@ -13,7 +13,7 @@ Orchestrate code review via tasks and Task delegation.
 
 ## Plan Directory
 
-@rules/blueprints.md — prefix: `review-`, e.g. `review-<slug>.md`.
+@rules/blueprints.md — subdirectory: `reviews/`, epoch-prefixed, e.g. `reviews/<epoch>-<slug>.md` where epoch = Unix seconds.
 
 ## Arguments
 
@@ -108,6 +108,12 @@ Orchestrate code review via tasks and Task delegation.
        if [ -z "$plan_file" ]; then
          plan_file=$(ls ~/workspace/blueprints/<project>/archive/*<branch-slug>*.md 2>/dev/null | head -1)
        fi
+       if [ -z "$plan_file" ]; then
+         plan_file=$(ls ~/workspace/blueprints/<project>/reviews/*<branch-slug>*.md 2>/dev/null | head -1)
+       fi
+       if [ -z "$plan_file" ]; then
+         plan_file=$(ls ~/workspace/blueprints/<project>/reviews/archive/*<branch-slug>*.md 2>/dev/null | head -1)
+       fi
        ```
        If `$plan_file` is found, extract the `## Spec` section
        content (everything from `## Spec` to the next `## ` heading
@@ -186,8 +192,10 @@ Orchestrate code review via tasks and Task delegation.
    a. Generate a kebab-case slug from the branch name
       (lowercase, strip filler words, replace non-alnum
       with hyphens, max 50 chars)
+   a2. Compute epoch: `epoch=$(date +%s)`
+   a3. `mkdir -p ~/workspace/blueprints/<project>/reviews/`
    b. Write plan file:
-      `Write("~/workspace/blueprints/<project>/review-<slug>.md",
+      `Write("~/workspace/blueprints/<project>/reviews/<epoch>-<slug>.md",
         <frontmatter + findings>)`
       Frontmatter:
       ```yaml
@@ -201,7 +209,7 @@ Orchestrate code review via tasks and Task delegation.
    c. Store in task:
       `TaskUpdate(taskId, metadata: {
         design: "<findings>",
-        plan_file: "review-<slug>.md" })`
+        plan_file: "reviews/<epoch>-<slug>.md" })`
    d. Leave task in_progress
 
 7. **Report results**
@@ -597,7 +605,7 @@ pruned, <L> uncertain `[needs-review]`
 **Consensus Findings** (flagged by multiple perspectives):
 - <count> consensus findings
 
-**Plan**: `~/workspace/blueprints/<project>/review-<slug>.md` —
+**Plan**: `~/workspace/blueprints/<project>/reviews/<epoch>-<slug>.md` —
 review/edit in `$EDITOR` before `/implement`.
 
 **Next**: `/implement` to create tasks, or edit the plan first.

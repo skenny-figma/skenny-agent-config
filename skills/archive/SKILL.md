@@ -22,16 +22,23 @@ Move a blueprint to `archive/` and commit.
 1. Determine `<project>` per @rules/blueprints.md.
 2. Resolve target file:
    - If slug provided: match against
-     `~/workspace/blueprints/<project>/*<slug>*` (try with/without
-     `.md` extension)
+     `~/workspace/blueprints/<project>/*<slug>*` and
+     `~/workspace/blueprints/<project>/reviews/*<slug>*`
+     (try with/without `.md` extension)
    - If no slug: most recent via
-     `ls -t ~/workspace/blueprints/<project>/*.md | head -1`
+     `{ ls -t ~/workspace/blueprints/<project>/*.md ~/workspace/blueprints/<project>/reviews/*.md; } 2>/dev/null | head -1`
    - If no files found: report "No active blueprints for
      `<project>`" and stop.
-3. Archive:
+3. Archive — destination depends on source location:
+   - If source is in `reviews/`: archive to `reviews/archive/`
+   - Otherwise: archive to `archive/`
    ```sh
+   # For top-level files:
    mkdir -p ~/workspace/blueprints/<project>/archive/
    mv <file> ~/workspace/blueprints/<project>/archive/
+   # For reviews/ files:
+   mkdir -p ~/workspace/blueprints/<project>/reviews/archive/
+   mv <file> ~/workspace/blueprints/<project>/reviews/archive/
    ```
 4. Commit per @rules/blueprints.md:
    ```sh

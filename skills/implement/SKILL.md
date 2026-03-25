@@ -39,7 +39,7 @@ Bash is for read-only orchestration only (git status, team config reads).
 If Step 1 found no tasks, check for plan files before exiting.
 
 1. Determine project per @rules/blueprints.md.
-2. Scan: `ls -t ~/workspace/blueprints/<project>/*.md 2>/dev/null | head -1`
+2. Scan: `{ ls -t ~/workspace/blueprints/<project>/*.md ~/workspace/blueprints/<project>/reviews/*.md; } 2>/dev/null | head -1`
 3. If no plan file → exit, suggest `/research`
 4. Read the plan file. Skip YAML frontmatter (between `---` lines).
 5. Parse phases: find `**Phase N: Description**` or `### Phase N:`
