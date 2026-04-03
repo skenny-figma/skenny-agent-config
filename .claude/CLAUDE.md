@@ -1,5 +1,13 @@
 # Project Instructions
 
+## Repository Context
+
+This repo is the source of truth for Claude Code configuration.
+Files here are symlinked into `~/.claude/` via `install.sh`.
+
+- **Edit files in this repo**, not in `~/.claude/` directly
+- Non-symlinked additions must be added to `install.sh`
+
 ## Multi-Phase Implementation Guidelines
 
 When using `/research` to plan complex features, structure the "Next
