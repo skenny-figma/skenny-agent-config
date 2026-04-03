@@ -79,21 +79,8 @@ If Step 1 found no tasks, check for plan files before exiting.
    ```
 10. Set blockedBy for sequential phases:
     `TaskUpdate(phaseN+1, addBlockedBy: ["<phaseN-id>"])`
-11. Archive plan file:
-    ```
-    mkdir -p ~/workspace/blueprints/<project>/archive/
-    mv <plan-file> ~/workspace/blueprints/<project>/archive/
-    ```
-    Then commit the move per @rules/blueprints.md Commit-on-Write:
-    ```sh
-    cd ~/workspace/blueprints && \
-      git add -A <project>/ && \
-      git commit -m "implement(<project>): <slug>" && \
-      git push || (git pull --rebase && git push)
-    ```
-    If rebase fails, STOP and alert the user.
-12. `TaskUpdate(epicId, status: "in_progress")`
-13. Proceed to Step 2 with the new epic.
+11. `TaskUpdate(epicId, status: "in_progress")`
+12. Proceed to Step 2 with the new epic.
 
 ## Step 2: Classify
 

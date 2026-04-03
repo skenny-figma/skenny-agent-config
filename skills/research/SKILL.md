@@ -224,9 +224,6 @@ depth: <medium|high|max>
 15. **Approve and finalize:**
     - Update plan file status to `approved`.
     - `TaskUpdate(taskId, metadata: { status_detail: "approved" })`
-    - Archive previous plan for this project if one exists:
-      `mv ~/workspace/blueprints/<project>/archive/<old>.md ...` (skip if
-      none)
 
     ### Commit-on-Write
 

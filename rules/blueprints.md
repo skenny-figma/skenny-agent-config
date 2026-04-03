@@ -39,10 +39,5 @@ details. Do not continue the skill — blueprint data may be at risk.
 
 ## Archive Protocol
 
-When a blueprint is consumed by a downstream skill:
-
-```sh
-mkdir -p ~/workspace/blueprints/<project>/archive/
-mv ~/workspace/blueprints/<project>/<type>/<file> \
-   ~/workspace/blueprints/<project>/archive/
-```
+Archival is manual. Use `/archive` to move a blueprint to
+`archive/` when it is no longer needed in its active directory.
