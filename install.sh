@@ -12,7 +12,6 @@ items=(
   "settings.json"
   "statusline.py"
   "skills"
-  "hooks"
   "rules"
 )
 
@@ -25,6 +24,16 @@ for item in "${items[@]}"; do
     ln -sf "$src" "$dest"
     echo "Linked: $dest"
   fi
+done
+
+# Hooks: symlink individual files (directory is shared with rtk)
+mkdir -p "$CLAUDE_DIR/hooks"
+for hook in "$SCRIPT_DIR/hooks/"*; do
+  [ -f "$hook" ] || continue
+  dest="$CLAUDE_DIR/hooks/$(basename "$hook")"
+  rm -f "$dest"
+  ln -sf "$hook" "$dest"
+  echo "Linked: $dest"
 done
 
 echo "Done"
