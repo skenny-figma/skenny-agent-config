@@ -2,7 +2,7 @@
 name: vibe
 description: >
   Fully autonomous development workflow from prompt to commit.
-  Chains research → implement → commit → submit.
+  Chains research → implement → review → commit → submit.
   Triggers: /vibe, "vibe this", "autonomous workflow".
 allowed-tools: Bash, Read, Glob, Skill, TaskCreate, TaskUpdate, TaskGet, TaskList
 argument-hint: "<prompt> [--continue] [--dry-run]"
@@ -25,7 +25,7 @@ Run the full development pipeline from a single prompt.
 ## Pipeline
 
 ```
-/research → /implement → /report → /commit → /submit
+/research → /implement → /review → /report → /commit → /submit
 ```
 
 Each stage verifies success before proceeding. Failures halt
@@ -84,7 +84,7 @@ Skill("research", args="<prompt>")
 **Verify**: Plan file exists in `~/workspace/blueprints/<project>/`.
 Check via `{ ls -t ~/workspace/blueprints/<project>/spec/*.md ~/workspace/blueprints/<project>/plan/*.md ~/workspace/blueprints/<project>/review/*.md; } 2>/dev/null | head -1`.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "research" })`
-**Report**: `[1/5] Researched: plan at <path>`
+**Report**: `[1/6] Researched: plan at <path>`
 
 If `--dry-run` → stop here. Report plan file, suggest
 `/implement` or `/vibe --continue` when ready.
@@ -98,12 +98,25 @@ Skill("implement", args="--no-report")
 **Verify**: `TaskList()` → all children of epic have
 `status == "completed"`.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "implement" })`
-**Report**: `[2/5] Implemented: N/N tasks completed`
+**Report**: `[2/6] Implemented: N/N tasks completed`
 
 If some tasks failed, report failures but continue to commit
 if any code was changed (`git diff --stat` is non-empty).
 
-### Stage 3: Report
+### Stage 3: Review
+
+```
+Skill("review")
+```
+
+**Verify**: Review file exists via
+`ls -t ~/workspace/blueprints/<project>/review/*.md | head -1`.
+**Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "review" })`
+**Report**: `[3/6] Reviewed: findings at <path>`
+
+If review fails, log warning but continue to report (non-blocking).
+
+### Stage 4: Report
 
 ```
 Skill("report")
@@ -112,14 +125,14 @@ Skill("report")
 **Verify**: Report file exists via
 `ls -t ~/workspace/blueprints/<project>/report/*.md | head -1`.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "report" })`
-**Report**: `[3/5] Report: <path>`
+**Report**: `[4/6] Report: <path>`
 
 If report fails, log warning but continue to commit (non-blocking).
 
-### Stage 4: Commit
+### Stage 5: Commit
 
 Check `git diff --stat` first. If empty → skip, report
-`[4/5] Commit: skipped (no changes)`.
+`[5/6] Commit: skipped (no changes)`.
 
 ```
 Skill("commit")
@@ -127,9 +140,9 @@ Skill("commit")
 
 **Verify**: `git log -1 --oneline` shows a new commit.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "commit" })`
-**Report**: `[4/5] Committed: <commit oneline>`
+**Report**: `[5/6] Committed: <commit oneline>`
 
-### Stage 5: Submit
+### Stage 6: Submit
 
 ```
 Skill("submit")
@@ -137,7 +150,7 @@ Skill("submit")
 
 **Verify**: `gt ls` shows PR created/updated.
 **Update**: `TaskUpdate(trackerId, metadata: { vibe_stage: "submit" })`
-**Report**: `[5/5] Submitted: PR created/updated`
+**Report**: `[6/6] Submitted: PR created/updated`
 
 If submit fails, log warning (non-blocking) — code is committed.
 
@@ -151,11 +164,12 @@ Report full summary:
 
 ```
 Pipeline complete:
-[1/5] Researched: plan at <path>
-[2/5] Implemented: N/N tasks completed
-[3/5] Report: <path>
-[4/5] Committed: <commit oneline>
-[5/5] Submitted: PR created/updated
+[1/6] Researched: plan at <path>
+[2/6] Implemented: N/N tasks completed
+[3/6] Reviewed: findings at <path>
+[4/6] Report: <path>
+[5/6] Committed: <commit oneline>
+[6/6] Submitted: PR created/updated
 ```
 
 ## Error Handling
@@ -170,8 +184,8 @@ If ANY stage fails:
    Error: <details>
 
    Completed:
-   [1/5] Researched: ...
-   [2/5] Implemented: ...
+   [1/6] Researched: ...
+   [2/6] Implemented: ...
 
    Resume: `/vibe --continue`
    Or run manually: `/<failed-skill> [args]`
@@ -179,7 +193,7 @@ If ANY stage fails:
 
 ## Stage Count
 
-- Default: 5 stages (`[N/5]`)
+- Default: 6 stages (`[N/6]`)
 - With `--dry-run`: 1 stage (`[N/1]`)
 
 Adjust the `[N/M]` denominator based on active flags.
