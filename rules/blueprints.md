@@ -18,7 +18,6 @@ basename "$(git remote get-url origin 2>/dev/null | sed 's|\.git$||')" 2>/dev/nu
 ~/workspace/blueprints/<project>/review/     # code review blueprints
 ~/workspace/blueprints/<project>/report/     # execution reports
 ~/workspace/blueprints/<project>/archive/    # consumed blueprints (all types)
-~/workspace/blueprints/_concepts/            # cross-project concept notes
 ```
 
 Create on first write: `mkdir -p ~/workspace/blueprints/<project>/<type>/`
@@ -50,28 +49,17 @@ Archival is manual. Use `/archive` to move a blueprint to
 
 ## Linking
 
-Cross-cutting concept notes live in `~/workspace/blueprints/_concepts/`.
+Use `source` frontmatter to connect related blueprints:
 
-**Litmus test:** if it's a project-scoped concern, it belongs in the
-project folder. If it's a cross-project idea, decision, pattern, or
-system — reference it with a `[[wikilink]]`.
+```yaml
+---
+source: "[[1711324800-my-feature]]"
+---
+```
 
-- Link format: `[[kebab-case-concept-name]]` matching concept note
-  filename without `.md` extension
-- Concept note format:
-  ```markdown
-  ---
-  aliases: [<alias>]
-  tags: [<tag>]
-  ---
-  # <Concept Name>
-
-  Short definition body.
-  ```
-- Skills do **not** auto-generate links — linking is a human activity
-  done in Obsidian
-- Concept notes are created manually when needed
-- Concept notes are evergreen references. Time-bound decisions
-  belong in project plans.
-- Commit-on-write for concepts: `git add -A _concepts/` with
-  message format `concept: <slug>`
+- `source`: Obsidian wikilink to the blueprint that triggered this one
+- Only added by skills that discover a prior blueprint (review,
+  report, fix)
+- Obsidian resolves bare filenames across vault directories — no
+  path prefix needed
+- Creates a directed graph: spec <- review <- fix plan <- report
