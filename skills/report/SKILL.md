@@ -84,7 +84,9 @@ ls -t ~/workspace/blueprints/<project>/plan/*.md \
   2>/dev/null | head -1
 ```
 
-If found: read it and extract phase titles (lines matching
+If found, extract `$SOURCE_SLUG`: `SOURCE_SLUG=$(basename "$plan_file" .md)`
+
+Read it and extract phase titles (lines matching
 `**Phase N:` or `### Phase N:`) for plan-vs-reality mapping.
 
 ### 6. Generate Slug
@@ -110,6 +112,7 @@ project: <absolute path to cwd>
 created: <ISO 8601 timestamp>
 status: complete
 branch: <branch name>
+source: "[[<$SOURCE_SLUG>]]"   # only when plan found in step 5
 ---
 ```
 

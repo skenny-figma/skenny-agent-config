@@ -46,3 +46,20 @@ details. Do not continue the skill — blueprint data may be at risk.
 
 Archival is manual. Use `/archive` to move a blueprint to
 `archive/` when it is no longer needed in its active directory.
+
+## Linking
+
+Use `source` frontmatter to connect related blueprints:
+
+```yaml
+---
+source: "[[1711324800-my-feature]]"
+---
+```
+
+- `source`: Obsidian wikilink to the blueprint that triggered this one
+- Only added by skills that discover a prior blueprint (review,
+  report, fix)
+- Obsidian resolves bare filenames across vault directories — no
+  path prefix needed
+- Creates a directed graph: spec <- review <- fix plan <- report

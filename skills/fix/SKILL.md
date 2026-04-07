@@ -29,8 +29,16 @@ Run these in parallel to understand what was recently implemented:
 ```bash
 git diff --name-only HEAD~3..HEAD
 git log --oneline -5
-git branch --show-current
+branch=$(git branch --show-current)
 ```
+
+Also resolve the review source (parallel with above):
+```bash
+branch_slug=$(echo "$branch" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/-*$//')
+project=$(basename "$(git remote get-url origin 2>/dev/null | sed 's|\.git$||')" 2>/dev/null || basename "$(pwd)")
+review_file=$(ls -t ~/workspace/blueprints/$project/review/*$branch_slug*.md 2>/dev/null | head -1)
+```
+If `review_file` found, extract: `SOURCE_SLUG=$(basename "$review_file" .md)`
 
 If user references specific files, read those files.
 
@@ -73,6 +81,7 @@ b. Write plan file:
    project: <absolute path to cwd>
    created: <ISO 8601 timestamp>
    status: draft
+   source: "[[<$SOURCE_SLUG>]]"   # only when review found in step 1
    ---
    ```
 c. Store in task: TaskUpdate(taskId, metadata: {design: "<phased-findings>", plan_file: "plan/<epoch>-<slug>.md"})

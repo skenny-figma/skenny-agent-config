@@ -115,6 +115,8 @@ Orchestrate code review via tasks and Task delegation.
        section exists in the file, treat as no plan found.
        Set `$HAS_PLAN` = true if spec content was extracted,
        false otherwise.
+       If `$HAS_PLAN` is true, extract `$SOURCE_SLUG` from the
+       plan file: `SOURCE_SLUG=$(basename "$plan_file" .md)`
 
    b. Create team:
       `TeamCreate(team_name="review-<branch-slug>")`
@@ -200,6 +202,7 @@ Orchestrate code review via tasks and Task delegation.
       project: <absolute path to cwd>
       created: <ISO 8601 timestamp>
       status: draft
+      source: "[[<$SOURCE_SLUG>]]"   # only when $HAS_PLAN is true
       ---
       ```
    c. Store in task:
