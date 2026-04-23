@@ -33,4 +33,22 @@ Use native Claude Code tasks for plans and state.
 - **Task state**: task `status` field
 - **View**: `TaskGet(taskId)`
 
+## Working on skenny-agent-config itself
+
+When the working directory is the `skenny-agent-config` repo
+(this file's own repo — personal agent config synced across
+dev envs), the standard PR workflow does NOT apply:
+
+- Commit directly to `main` and push — no branches, no PRs,
+  no Graphite, no `/submit`
+- You are pre-authorized to `git push origin main` without
+  asking for confirmation
+- If something breaks, fix-forward with another commit
+- After editing anything that `install.sh` symlinks (hooks,
+  skills, rules, settings), the change is live immediately in
+  any env that already ran install — no re-install needed
+
+This override applies only to this repo. In all other repos,
+follow the normal PR workflow in `rules/pr-workflow.md`.
+
 @RTK.md
