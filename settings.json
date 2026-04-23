@@ -45,7 +45,22 @@
   "enabledPlugins": {
     "context7@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true
+    "skill-creator@claude-plugins-official": true,
+    "figma-security-guidance@figma-internal": true,
+    "figma-plugin@figma-internal": true,
+    "fix-a11y@figma-internal": true,
+    "validate-and-fix@figma-internal": true,
+    "feature-flag-cleanup@figma-internal": true,
+    "qawolf-from-e2e@figma-internal": true,
+    "ml-tools@figma-internal": true,
+    "send-to-github@figma-internal": true,
+    "prodsec@figma-internal": true,
+    "testing@figma-internal": true,
+    "ci-tools@figma-internal": true,
+    "coder-tools@figma-internal": true,
+    "update-dependency@figma-internal": true,
+    "assistant-tooling@figma-internal": true,
+    "refresh-plugins@figma-internal": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
