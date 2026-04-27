@@ -50,5 +50,3 @@ dev envs), the standard PR workflow does NOT apply:
 
 This override applies only to this repo. In all other repos,
 follow the normal PR workflow in `rules/pr-workflow.md`.
-
-@RTK.md

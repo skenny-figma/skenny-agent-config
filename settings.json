@@ -15,17 +15,6 @@
   },
   "model": "opus[1m]",
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/rtk-rewrite.sh"
-          }
-        ]
-      }
-    ],
     "Notification": [
       {
         "hooks": [
@@ -60,7 +49,8 @@
     "coder-tools@figma-internal": true,
     "update-dependency@figma-internal": true,
     "assistant-tooling@figma-internal": true,
-    "refresh-plugins@figma-internal": true
+    "refresh-plugins@figma-internal": true,
+    "ml-experimenter@figma-internal": true
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -68,10 +58,15 @@
         "source": "github",
         "repo": "anthropics/claude-plugins-official"
       }
+    },
+    "figma-internal": {
+      "source": {
+        "source": "directory",
+        "path": "/home/ubuntu/figma/figma"
+      }
     }
   },
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true
 }
