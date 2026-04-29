@@ -19,27 +19,29 @@ flip true (or both false) for the wrapper to actually be used:
 
 Three entry points converge on the same plugin variant:
 
+Each node carries `<i>filename:line</i>` pointing to the relevant
+source location; full paths are in the **Key files** table below.
+
 ```mermaid
 flowchart TD
   classDef entry fill:#e0f2ff,stroke:#0080c0,color:#000
   classDef syncGate fill:#fff4d6,stroke:#cc9900,color:#000
   classDef pluginGate fill:#ffe0e6,stroke:#c0306b,color:#000
   classDef terminal fill:#dfe9d3,stroke:#3c8c3c,color:#000
-  classDef file fill:#f5f5f5,stroke:#888,color:#000,font-style:italic
 
   %% =============== Entry points ===============
-  PROD["Production<br/><b>assistant_config_key</b><br/>= design.experiment.ds-cli-tools"]:::entry
-  AEVAL["Assistant eval<br/><b>assistant_config_key</b><br/>= design.experiment.ds-cli-tools"]:::entry
-  DSEVAL["DS-context eval<br/><b>ds_context_config_key</b><br/>= subagent-cli-tools"]:::entry
+  PROD["Production<br/><b>assistant_config_key</b><br/>= design.experiment.ds-cli-tools<br/><i>handler.ts:477,490</i>"]:::entry
+  AEVAL["Assistant eval<br/><b>assistant_config_key</b><br/>= design.experiment.ds-cli-tools<br/><i>run_assistant_sandbox.ts:391,533</i>"]:::entry
+  DSEVAL["DS-context eval<br/><b>ds_context_config_key</b><br/>= subagent-cli-tools<br/><i>run_design_system_context_sandbox.ts:189–195</i>"]:::entry
 
   %% =============== Sync gate (left column) ===============
   subgraph SYNC[" Sync gate — wrapper script ships to sandbox "]
     direction TB
-    EXP["EXPERIMENT_DS_CLI_TOOLS<br/>{ sandboxEnableDsCliTools: true }"]
-    SUBOPT["DS-context eval helper<br/>getEvalEnableDsCliTools(key) === true"]
-    BUILDCFG["AssistantSandboxConfig.<br/>sandboxEnableDsCliTools = true"]
-    SYNCFN["DesignSystemSync.writeWrapperScripts()<br/>ships component_search.js"]
-    BUNDLE["sandbox: code/scripts/component_search.js<br/>(bun-bundled, ~600KB)"]:::terminal
+    EXP["EXPERIMENT_DS_CLI_TOOLS<br/>{ sandboxEnableDsCliTools: true }<br/><i>releases/design.ts:507</i>"]
+    SUBOPT["getEvalEnableDsCliTools(key) === true<br/><i>eval_agent_config.ts:31</i>"]
+    BUILDCFG["AssistantSandboxConfig.<br/>sandboxEnableDsCliTools = true<br/><i>sandbox_session.ts:156,325</i>"]
+    SYNCFN["DesignSystemSync.writeWrapperScripts()<br/>ships component_search.js<br/><i>design_system_sync.ts:182,188</i>"]
+    BUNDLE["sandbox: code/scripts/component_search.js<br/>(bun-bundled, ~600KB)<br/><i>source: scripts/component_search.ts</i>"]:::terminal
     EXP --> BUILDCFG
     SUBOPT --> BUILDCFG
     BUILDCFG --> SYNCFN --> BUNDLE
@@ -48,14 +50,14 @@ flowchart TD
   %% =============== Plugin gate (right column) ===============
   subgraph PLUG[" Plugin gate — variant selects template + allowlist "]
     direction TB
-    PRODMAP["getSboxAgentConfigIdForConfigurationKey<br/>'design.experiment.ds-cli-tools' → 'design-ds-cli-tools'"]
-    EVALAMAP["getEvalAssistantSboxAgentConfigId<br/>'design.experiment.ds-cli-tools' → 'eval-ds-cli-tools'"]
-    EVALDMAP["getEvalSboxAgentConfigId<br/>'subagent-cli-tools' → 'eval-ds-cli-tools'"]
-    AGENTJSON["agentplat templates/configs/assistant/<id>.json<br/>plugins: figma-design-systems@v0-with-cli-tools"]
-    COMPOSE["compose.yaml v0-with-cli-tools<br/>files: explore-design-systems.json → v0-with-cli-tools.json<br/>template_args: UseCliTools: true"]
-    RENDER["bootstrap manifest.go renderPluginTemplate<br/>v0.md.tmpl + UseCliTools=true"]
-    PROMPT["sandbox: agents/explore-design-systems.md<br/>(bun-script branch active)"]:::terminal
-    ALLOW["sandbox: agents/explore-design-systems.json<br/>tools allowlist DROPS assistant_component_search"]:::terminal
+    PRODMAP["getSboxAgentConfigIdForConfigurationKey<br/>'design.experiment.ds-cli-tools'<br/>→ 'design-ds-cli-tools'<br/><i>sbox_agent_config.ts:18</i>"]
+    EVALAMAP["getEvalAssistantSboxAgentConfigId<br/>'design.experiment.ds-cli-tools'<br/>→ 'eval-ds-cli-tools'<br/><i>eval_agent_config.ts:44</i>"]
+    EVALDMAP["getEvalSboxAgentConfigId<br/>'subagent-cli-tools'<br/>→ 'eval-ds-cli-tools'<br/><i>eval_agent_config.ts:11</i>"]
+    AGENTJSON["agentplat configs/assistant/&lt;id&gt;.json<br/>plugins: figma-design-systems@v0-with-cli-tools<br/><i>{design,eval}-ds-cli-tools.json</i>"]
+    COMPOSE["compose.yaml v0-with-cli-tools<br/>files: explore-design-systems.json override<br/>template_args: UseCliTools: true<br/><i>compose.yaml:34</i>"]
+    RENDER["bootstrap manifest.go renderPluginTemplate<br/>v0.md.tmpl + UseCliTools=true<br/><i>manifest.go:361</i>"]
+    PROMPT["sandbox: agents/explore-design-systems.md<br/>(bun-script branch active)<br/><i>v0.md.tmpl:5,78,147,150,152</i>"]:::terminal
+    ALLOW["sandbox: agents/explore-design-systems.json<br/>allowlist DROPS assistant_component_search<br/><i>source: v0-with-cli-tools.json</i>"]:::terminal
     PRODMAP --> AGENTJSON
     EVALAMAP --> AGENTJSON
     EVALDMAP --> AGENTJSON
